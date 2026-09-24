@@ -18,11 +18,11 @@ import re
 import base64
 import mimetypes
 
-# ===== CONFIG =====
-BASE_DIR = input("Base directory: ") # /run/media/veracrypt1/.files/download/MangaFiles"
-OUTPUT_FILE = os.path.join(BASE_DIR, f"{os.path.basename(BASE_DIR)}fuka.html")
+# ===== CONFIG (defaults — sobrescritos via input em main() ou via main.py) =====
+BASE_DIR = ""
+OUTPUT_FILE = ""
 IMG_EXTS    = (".png", ".jpg", ".jpeg", ".webp", ".avif")
-MANGA_TITLE = os.path.basename(BASE_DIR)
+MANGA_TITLE = ""
 # ==================
 
 mimetypes.add_type("image/webp", ".webp")
@@ -313,7 +313,10 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;o
 #  BUILD
 # ══════════════════════════════════════════════════════════════════════════════
 
-def build_single_html(base_dir, output_file):
+def build_single_html(base_dir, output_file=None, manga_title=None):
+    manga_title = manga_title or MANGA_TITLE or os.path.basename(os.path.abspath(base_dir))
+    if not output_file:
+        output_file = os.path.join(base_dir, f"{os.path.basename(os.path.abspath(base_dir))}fuka.html")
     chapters = get_chapters(base_dir)
     if not chapters:
         print("Nenhuma subpasta encontrada.")
@@ -396,7 +399,7 @@ def build_single_html(base_dir, output_file):
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
     </button>
     <div class="ch-title-wrap">
-      <div class="ch-manga-name">{MANGA_TITLE}</div>
+      <div class="ch-manga-name">{manga_title}</div>
       <div class="ch-chapter-name">{ch['name']}</div>
     </div>
     <span class="ch-pg-counter" id="counter-{ci}">1/{total}</span>
@@ -767,7 +770,7 @@ document.addEventListener('touchend',e=>{{
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
 <meta name="theme-color" content="#111010"/>
-<title>{MANGA_TITLE}</title>
+<title>{manga_title}</title>
 <style>{CSS}</style>
 </head>
 <body>
@@ -775,12 +778,12 @@ document.addEventListener('touchend',e=>{{
 <!-- ═══ LIBRARY ═══ -->
 <div id="view-library">
   <nav class="lib-nav">
-    <span class="lib-nav-logo">{MANGA_TITLE}</span>
+    <span class="lib-nav-logo">{manga_title}</span>
     <span class="lib-nav-badge">{total_ch} cap.</span>
   </nav>
   <header class="lib-hero">
     <p class="lib-hero-eyebrow">Biblioteca · Mangá</p>
-    <h1 class="lib-hero-title">{MANGA_TITLE}</h1>
+    <h1 class="lib-hero-title">{manga_title}</h1>
     <p class="lib-hero-meta">{total_ch} capítulos disponíveis</p>
   </header>
   <div class="lib-toolbar">
@@ -801,7 +804,7 @@ document.addEventListener('touchend',e=>{{
     </div>
   </div>
   <main class="lib-grid" id="lib-grid">{cards_html}</main>
-  <footer class="lib-footer">{MANGA_TITLE} &mdash; Arquivo único gerado localmente</footer>
+  <footer class="lib-footer">{manga_title} &mdash; Arquivo único gerado localmente</footer>
 </div>
 
 <!-- ═══ READER ═══ -->
@@ -820,6 +823,24 @@ document.addEventListener('touchend',e=>{{
     print(f"Abra no navegador: {output_file}")
 
 # ─────────────────────────────────────────────────────────────────────────────
+def main(base_dir=None, output_file=None, manga_title=None):
+    """Entry-point interativo: permite uso via main.py ou standalone."""
+    base_dir = (base_dir or input("Base directory: ").strip()
+                or BASE_DIR or os.getcwd())
+    if not os.path.isdir(base_dir):
+        print(f"[✗] Pasta não encontrada: {base_dir}")
+        return
+    default_out = os.path.join(
+        base_dir, f"{os.path.basename(os.path.abspath(base_dir))}fuka.html")
+    output_file = output_file or input(
+        f"Arquivo de saída [{default_out}]: ").strip() or default_out
+    title_default = (manga_title or MANGA_TITLE
+                     or os.path.basename(os.path.abspath(base_dir)))
+    manga_title = (input(f"Título [{title_default}]: ").strip()
+                   if manga_title is None else manga_title) or title_default
+    build_single_html(base_dir, output_file, manga_title)
+
+
 if __name__ == "__main__":
-    build_single_html(BASE_DIR, OUTPUT_FILE)
+    main()
 

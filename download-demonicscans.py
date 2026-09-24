@@ -347,11 +347,21 @@ def baixar_capitulo(capitulo: int, pasta_base: Path, session: requests.Session) 
     print(f"[✓] Cap {capitulo}: {sucesso}/{len(urls)} páginas salvas em {pasta_cap}")
     return sucesso
 
-def main():
+def main(url_inicial=None, start_chapter=None, max_capitulos=None, pasta_saida=None):
     # Permite override via CLI: python script.py 10 5  -> começa no 10, baixa 5
     # ou: python script.py https://demonicscans.org/title/Vagabond/chapter/10/1
-    global URL_INICIAL, MAX_CAPITULOS, START_CHAPTER
-    if len(sys.argv) > 1:
+    # Permite override via parâmetros (uso pelo main.py centralizador).
+    global URL_INICIAL, MAX_CAPITULOS, START_CHAPTER, PASTA_SAIDA
+    if url_inicial is not None:
+        URL_INICIAL = url_inicial
+    if start_chapter is not None:
+        START_CHAPTER = start_chapter
+        URL_INICIAL = construir_url_capitulo(int(start_chapter))
+    if max_capitulos is not None:
+        MAX_CAPITULOS = int(max_capitulos)
+    if pasta_saida is not None:
+        PASTA_SAIDA = Path(pasta_saida).expanduser()
+    if len(sys.argv) > 1 and url_inicial is None and start_chapter is None:
         arg = sys.argv[1]
         if arg.startswith("http"):
             URL_INICIAL = arg
@@ -370,7 +380,7 @@ def main():
 
     start = parse_start_chapter(URL_INICIAL, START_CHAPTER)
 
-    pasta_base = Path(PASTA_SAIDA)
+    pasta_base = Path(PASTA_SAIDA).expanduser()
     pasta_base.mkdir(parents=True, exist_ok=True)
 
     print("="*60)
